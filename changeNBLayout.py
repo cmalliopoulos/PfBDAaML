@@ -5,7 +5,7 @@ from IPython.core.display import HTML, display
 display(HTML('<style> .container {width: 90% !important} </style>'))
 
 display(HTML('''
-    <style> .CodeMirror {font-size: 10pt !important} </style>'''))
+    <style> .CodeMirror {font-size: 10.5pt !important} </style>'''))
 
 display(HTML('''
 <style> div.cell.selected{
