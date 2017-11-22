@@ -8,8 +8,8 @@ display(HTML('''
     <style> .CodeMirror {font-size: 10.5pt !important} </style>'''))
 
 display(HTML('''
-<style> div.cell.selected{
-    border-left-width: auto !important}</style>'''))
+# <style> div.cell.selected{
+#     border-left-width: auto !important}</style>'''))
 
 # Change the focnt used by markdown cells
 # Change the line-spacing between text lines
