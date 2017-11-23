@@ -13,7 +13,7 @@ display(HTML('''
     <style> .CodeMirror {font-size: 10.5pt !important} </style>'''))
 
 display(HTML('''
-    <style> div.cell.selected{border: 2px};</style>'''))
+    <style> div.cell.selected{border: none};</style>'''))
 
 # Change the font used by markdown cells
 # Change the line-spacing between text lines
