@@ -1,4 +1,3 @@
-import IPython.core.display as dis
 from IPython.core.display import HTML, display
 
 display(HTML('''
@@ -13,7 +12,7 @@ display(HTML('''
     <style> .CodeMirror {font-size: 10.5pt !important} </style>'''))
 
 display(HTML('''
-    <style> div.cell.selected{border: none};</style>'''))
+    <style> div.cell.selected{border: 0px};</style>'''))
 
 # Change the font used by markdown cells
 # Change the line-spacing between text lines
@@ -22,14 +21,14 @@ display(HTML('''<style>
     .text_cell_render {
         font-family: "Roboto Condensed"; 
         line-height: 145%; 
-        font-size: 14pt} </style>'''))
+        font-size: 13pt} </style>'''))
 
 # Change the size of text in code cells
 # Change the size of text in code-cell output
-display(HTML('''<style> 
-    .CodeMirror {font-size: large} 
-    .output_area {font-size: large} </style>'''))
+# display(HTML('''<style> 
+#     .CodeMirror {font-size: large} 
+#     .output_area {font-size: large} </style>'''))
 
-display(HTML('''<style> MathJax.Hub.Config {
-  "HTML-CSS": {
-    preferredFont: "Tex"}}</style>'''))
+# display(HTML('''<style> MathJax.Hub.Config {
+#   "HTML-CSS": {
+#     preferredFont: "Tex"}}</style>'''))
