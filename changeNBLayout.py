@@ -23,12 +23,6 @@ display(HTML('''<style>
         line-height: 145%; 
         font-size: 13pt} </style>'''))
 
-# Change the size of text in code cells
 # Change the size of text in code-cell output
-# display(HTML('''<style> 
-#     .CodeMirror {font-size: large} 
-#     .output_area {font-size: large} </style>'''))
-
-# display(HTML('''<style> MathJax.Hub.Config {
-#   "HTML-CSS": {
-#     preferredFont: "Tex"}}</style>'''))
+display(HTML('''<style> 
+    .output_area {font-size: large} </style>'''))
