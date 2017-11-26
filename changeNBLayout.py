@@ -21,7 +21,7 @@ display(HTML('''<style>
     .text_cell_render {
         font-family: "Roboto Condensed"; 
         line-height: 145%; 
-        font-size: 13pt} </style>'''))
+        font-size: 14pt} </style>'''))
 
 # Change the size of text in code-cell output
 display(HTML('''<style> 
