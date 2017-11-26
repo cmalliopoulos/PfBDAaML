@@ -1,0 +1,168 @@
+#!/usr/bin/env python
+
+''' Module functions (for shell invokation see at the end of the module):
+    . . .
+'''
+
+__author__ = 'Christos Malliopoulos'
+__email__ = 'christos.malliopoulos@infor.com'
+
+
+import numpy as np
+import pandas as pd
+import os
+import sys
+import string
+import csv
+import math
+import collections as cl
+import datetime as dt
+
+import tensorflow as tf
+
+import cfg
+import streaming as st
+import containers as ct
+
+from string import whitespace as ws
+
+reload(ct)
+reload(st)
+reload(cfg)
+
+#
+# NN model modules are loaded dynamically using the imp module
+#
+import imp
+
+
+def fit(
+    modelModule_,
+    x0Sa_, y0Sa_, 
+    nnd_,
+    # trainSteps_, mbSize_,
+    # keepProb_, hLayers_, trainRate_,
+    argd_
+    # savePath_, restorePath_
+    ):
+    ''' Note on savePath_ | restorePath_:
+        savePath_ is par['weightspath'] which in turn is ckpt/par['jobname'].
+        TF writes savePath_.data00000-of-00001, savePath_.index, savePath_.meta and os.dirname(savePath_)/checkpoint
+        So if ckpt = ${HOME} everythong of the above will be written in the dir of the cfg file.
+        I have set summaryWriter_dir_ = savePath_ so all event files will be written in savePath_/*
+        The point to remember is that tf.Saver.save assumes that save_path arg contains the file's basename
+    '''
+    def clearLog(path_):
+        for top, _, files in os.walk(path_):
+            map(lambda _: os.remove(os.path.join(top, _)), files)
+
+    # summaryWriterDir = savePath_
+    # savePath_ = par[a]['weightspath'],
+    # restorePath_ = par[a]['weightspath'] if par[a]['reset'] is False else None
+    
+    savePath = argd_['weightspath']
+    restorePath = argd_['weightspath'] if argd_['reset'] is False else None
+    nnd_['mbsize'] = ct.assertMinibatch(nnd_['mbsize'], x0Sa_.shape[0])
+    iterator = ct.naiveIterator if nnd_['iteration-policy'] == 'naive' else ct.posModuloIterator
+
+    model = modelModule_.create(
+        # mbSize_ = nnd_['mbsize'],
+        inCols_ = x0Sa_.shape[1],
+        outCols_ = y0Sa_.shape[1],
+        nnd_ = nnd_
+        # hLayers_ = hLayers_, 
+        # keepProb_ = keepProb_, 
+        # trainRate_ = trainRate_
+        )
+
+    saver = tf.train.Saver(var_list = tf.global_variables(), max_to_keep = 1)
+        
+    # S e s s i o n . . .
+    with tf.Session() as sess:
+        if restorePath is not None:
+            st.writeLine('Restoring from {}'.format(restorePath), False)
+            saver.restore(sess, restorePath)
+        else:
+            st.writeLine('Clearing Log {}'.format(savePath), False)
+            clearLog(savePath)
+            sess.run(tf.global_variables_initializer())
+
+        sr = tf.summary.FileWriter(logdir = savePath, graph = model.graph, flush_secs = 1)
+        nmb = int(math.ceil((1. * x0Sa_.shape[0])/nnd_['mbsize']))
+        st.writeLine('Training model {}'.format(modelModule_.__name__), False)
+        st.writeLine('with {} epochs, {} minibatches per epoch'.format(nnd_['trainsteps'], nmb), False)
+
+        x0Shard = ct.shard(iterator(x0Sa_, nnd_['mbsize']))
+        y0Shard = ct.shard(iterator(y0Sa_, nnd_['mbsize']))
+
+        ts = dt.datetime.now()
+        for i in xrange(nnd_['trainsteps']):
+            vals = model.fit(
+                session_ = sess, 
+                x0Shard_ = x0Shard, y0Shard_ = y0Shard,
+                iterations_ = nmb, summaryWriter_ = sr)
+
+            # Reshuffle
+            shuffle = np.random.permutation(x0Shard.array.shape[0])
+            x0Shard.policy.reset(perm_ = shuffle)
+            y0Shard.policy.reset(perm_ = shuffle)
+
+
+            # Log every so many steps as there'll be no more than 50 lines
+            if i % (max(50, nnd_['trainsteps']) // 50)  == 0:
+                st.writeLine((r'epoch:{} ' + model.tags).format(i, *[round(_, 4) for _ in vals]), False)
+
+        st.writeLine('Time: {}'.format(dt.datetime.now() - ts))
+        saver.save(sess = sess, save_path = savePath, write_meta_graph = True)
+        sr.close()
+
+
+#
+# M a i n
+# . . . . 
+#
+def main(args_):
+    par = cfg.parseArgs([os.path.abspath(__file__)] + args_)
+    nn, p, ff, a = 'NeuralNetwork', 'Paths', 'FileFormat', 'Arguments'
+    
+
+    # The model module path is inflexible because the module must be able to use other Lib modules
+    modelPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), par[p]['model'])
+    modelModule = imp.load_source(os.path.splitext(par[p]['model'])[0], modelPath)
+
+    # R e a d i n g
+    ixDf = pd.read_csv(par[p]['ixpath'], sep = par[ff]['sep'], header = None, names = ['name', 'value', 'key'])
+    x0Sa, y0Sa = st.pb2Sa(pbPath_ = par[a]['input'], ixDf_ = ixDf)
+
+    # T r a i n i n g
+    # if par[nn]['mbsize'] is None: par[nn]['mbsize'] = x0Sa.shape[0]
+    fit(
+        modelModule_ = modelModule,
+        x0Sa_ = x0Sa, 
+        y0Sa_ = y0Sa,
+        nnd_ = par[nn],        
+        # trainSteps_ = par[nn]['trainsteps'], 
+        # mbSize_ = par[nn]['mbsize'],
+        # keepProb_ = par[nn]['keepprob'], 
+        # hLayers_ = par[nn]['fcl'], 
+        # trainRate_ = par[nn]['trainrate'],         
+        argd_ = par[a]
+        # savePath_ = par[a]['weightspath'],
+        # restorePath_ = par[a]['weightspath'] if par[a]['reset'] is False else None
+        )
+
+
+
+if __name__ == "__main__":
+    ''' U s a g e
+        . . . . . 
+        $ <Lib path>/fit -j <cfg-path> -i <train.pb_0> -r{True, False}
+
+        Options:
+        {--job | -j}: the cfg file name. 
+        {--input | -i}: train.pb_0 (or whatever training pb given)
+
+        Result:
+        A trained model with parameters in the dir basename(<cfg-path>)
+    '''
+    _ = main(args_ = sys.argv[1:])
