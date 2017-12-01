@@ -6,7 +6,7 @@ display(HTML('''
     </style> '''))
 
 # Change the default cell width for all cell types (code, raw, markdown, mathJax)
-display(HTML('<style> .container {width: 90%} </style>'))
+display(HTML('<style> .container {width: 98%} </style>'))
 
 display(HTML('''
     <style> .CodeMirror {font-size: 10.5pt !important} </style>'''))
